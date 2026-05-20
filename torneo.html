@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Torneos Pro - Firebase Edition</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-color: #00ff87;
+            --primary-dark: #00cc6a;
+            --secondary-color: #00b4d8;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+            --danger-color: #ff4757;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2, h3, h4 { text-align: center; margin-top: 0; }
+        h1 { color: var(--primary-color); }
+        h2 { border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color); }
+        h3 { color: var(--secondary-color); }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Pantalla de Inicio */
+        #setup-section {
+            background-color: var(--surface-color);
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            max-width: 500px;
+            margin: 50px auto;
+            display: none; /* Controlado por JS */
+        }
+
+        .setup-group { margin: 20px 0; }
+
+        select {
+            padding: 10px;
+            font-size: 1.1em;
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .btn-large {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-large:hover { background-color: var(--primary-dark); }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 30px;
+            width: 100%;
+        }
+        .btn-danger:hover { background-color: #ff2a3f; }
+
+        /* General UI */
+        input[type="number"] {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            background-color: #2a2a2a;
+            color: white;
+            width: 50px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        button:hover { background-color: var(--primary-dark); }
+        .btn-saved { background-color: #555; color: #fff; cursor: default; }
+        .btn-saved:hover { background-color: #555; }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 800px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        /* Tabla */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #2a2a2a; color: var(--primary-color); }
+        .team-name-col { text-align: left; }
+        .player-name { font-size: 0.8em; color: var(--text-muted); display: block; }
+
+        .top-four { background-color: rgba(0, 255, 135, 0.05); } 
+        .eliminated { background-color: rgba(255, 71, 87, 0.1); } 
+
+        /* Matches */
+        .jornada-group {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .jornada-title {
+            color: #fff;
+            background-color: #2a2a2a;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .match-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .match-teams { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+        .team-name { width: 35%; text-align: center; font-weight: bold; }
+        .team-name span { display: block; font-size: 0.75em; color: var(--text-muted); font-weight: normal; }
+        .score-inputs { display: flex; gap: 5px; margin: 0 15px; align-items: center; }
+
+        /* Knockout Stage */
+        #knockout-section, #main-tournament { display: none; }
+        
+        .knockout-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .ko-match {
+            background-color: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--primary-color);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .champion-box {
+            text-align: center;
+            color: gold;
+            font-size: 2em;
+            margin-top: 20px;
+            display: none;
+            animation: pop 0.5s ease-out forwards;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 1.5em;
+            color: var(--primary-color);
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="loading">Cargando base de datos... ⚽</div>
+
+    <div id="setup-section">
+        <h1>🏆 Torneo Mata a Mata</h1>
+        <p style="color: var(--text-muted)">Edición 5 Jugadores</p>
+        
+        <div class="setup-group">
+            <label style="display: block; margin-bottom: 10px; font-weight: bold;">Modo de Torneo:</label>
+            <select id="team-type">
+                <option value="clubs">Equipos / Clubes</option>
+                <option value="national">Selecciones Nacionales</option>
+            </select>
+        </div>
+
+        <button class="btn-large" onclick="initTournament()">Generar Torneo</button>
+    </div>
+
+    <div id="main-tournament">
+        <h1>🏆 Torneo Mata a Mata (<span id="mode-display"></span>)</h1>
+
+        <div class="grid-layout">
+            <div class="card">
+                <h3>📊 Fase de Grupos</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pos</th>
+                            <th class="team-name-col">Equipo (Jugador)</th>
+                            <th>Pts</th>
+                            <th>PJ</th>
+                            <th>G</th>
+                            <th>E</th>
+                            <th>P</th>
+                            <th>GF</th>
+                            <th>GC</th>
+                            <th>DIF</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standings-body">
+                        </tbody>
+                </table>
+                <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 15px;">
+                    * Criterios: Puntos > Dif. Goles > Goles a Favor > Goles de visita > Victorias > Goles de local. <br>
+                    <span style="color: var(--primary-color);">Los 4 primeros avanzan a Semis.</span> 
+                    <span style="color: var(--danger-color);">El último queda eliminado.</span>
+                </p>
+            </div>
+
+            <div class="card">
+                <h3>📅 Calendario de Partidos</h3>
+                <p style="font-size: 0.8em; color: var(--secondary-color); text-align: center;">El formato garantiza que 4 jugadores definan todo en la última jornada.</p>
+                <div id="matches-container">
+                    </div>
+            </div>
+        </div>
+
+        <div id="knockout-section" class="card">
+            <h2>🔥 FASE ELIMINATORIA 🔥</h2>
+            
+            <h3 id="semis-title">Semifinales</h3>
+            <div id="semis-container" class="knockout-container">
+                </div>
+
+            <h3 id="final-title" style="display:none; margin-top: 40px; color: gold;">🌟 LA GRAN FINAL 🌟</h3>
+            <div id="final-container" class="knockout-container" style="display:none;">
+                </div>
+
+            <div id="champion-box" class="champion-box"></div>
+        </div>
+        
+        <button class="btn-danger" onclick="resetTournament()">⚠ Reiniciar Torneo (Borrar Base de Datos) ⚠</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBN9jRNgeJ5mDukzF5Jiujw7zadG4-UpZw",
+        authDomain: "agenda-10718.firebaseapp.com",
+        databaseURL: "https://agenda-10718-default-rtdb.firebaseio.com",
+        projectId: "agenda-10718",
+        storageBucket: "agenda-10718.firebasestorage.app",
+        messagingSenderId: "863470100835",
+        appId: "1:863470100835:web:5371b173133c7ee5de7356"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db, 'torneo_actual');
+
+    const players = ["Fernando", "Sergio", "Geremi", "Cristian", "Cristopher"];
+    
+    const teamPools = {
+        clubs: ["Real Madrid", "FC Barcelona", "Manchester City", "Bayern Munich", "Arsenal", "Liverpool", "PSG", "Inter Milan", "Juventus", "AC Milan", "Atlético Madrid", "Chelsea", "Borussia Dortmund", "Manchester United", "Spurs"],
+        national: ["Argentina", "Francia", "Brasil", "Inglaterra", "España", "Portugal", "Alemania", "Italia", "Uruguay", "Países Bajos", "Bélgica"]
+    };
+    
+    let teams = [];
+    let matches = [];
+    let semiMatches = [];
+    let finalMatch = null;
+    let currentMode = '';
+
+    // ESCUCHAR CAMBIOS EN LA BASE DE DATOS
+    onValue(dbRef, (snapshot) => {
+        const data = snapshot.val();
+        document.getElementById('loading').style.display = 'none';
+
+        if (data) {
+            // Cargar datos de Firebase
+            teams = data.teams || [];
+            matches = data.matches || [];
+            semiMatches = data.semiMatches || [];
+            finalMatch = data.finalMatch || null;
+            currentMode = data.mode || 'national';
+
+            document.getElementById('setup-section').style.display = 'none';
+            document.getElementById('main-tournament').style.display = 'block';
+            document.getElementById('mode-display').innerText = currentMode === 'clubs' ? 'Clubes' : 'Selecciones';
+
+            calculateStandings();
+            renderMatches();
+            
+            if (semiMatches.length > 0) {
+                document.getElementById('knockout-section').style.display = 'block';
+                renderSemis();
+            } else {
+                document.getElementById('knockout-section').style.display = 'none';
+            }
+
+            if (finalMatch) {
+                renderFinal();
+            } else {
+                document.getElementById('final-title').style.display = 'none';
+                document.getElementById('final-container').style.display = 'none';
+                document.getElementById('champion-box').style.display = 'none';
+            }
+        } else {
+            // No hay torneo, mostrar configuración
+            document.getElementById('setup-section').style.display = 'block';
+            document.getElementById('main-tournament').style.display = 'none';
+        }
+    });
+
+    window.initTournament = function() {
+        currentMode = document.getElementById('team-type').value;
+        teams = [];
+        matches = [];
+        semiMatches = [];
+        finalMatch = null;
+
+        let shuffledTeams = teamPools[currentMode].sort(() => 0.5 - Math.random());
+        let shuffledPlayers = [...players].sort(() => 0.5 - Math.random());
+
+        for(let i=0; i<5; i++) {
+            teams.push({
+                id: i, 
+                player: shuffledPlayers[i],
+                name: shuffledTeams[i],
+                pts: 0, pj: 0, w: 0, d: 0, l: 0, gf: 0, gc: 0, dif: 0,
+                gf_home: 0, gf_away: 0
+            });
+        }
+
+        let matchId = 0;
+        const rondas = [
+            { round: 1, rests: 0, games: [[1, 4], [2, 3]] },
+            { round: 2, rests: 1, games: [[0, 2], [3, 4]] },
+            { round: 3, rests: 2, games: [[1, 3], [0, 4]] },
+            { round: 4, rests: 3, games: [[0, 1], [2, 4]] },
+            { round: 5, rests: 4, games: [[0, 3], [1, 2]] }
+        ];
+
+        rondas.forEach(r => {
+            r.games.forEach(g => {
+                matches.push({ 
+                    id: matchId++, 
+                    round: r.round,
+                    restingTeam: r.rests,
+                    home: g[0], 
+                    away: g[1], 
+                    homeScore: null, 
+                    awayScore: null, 
+                    played: false 
+                });
+            });
+        });
+
+        // Guardar estado inicial en Firebase
+        set(dbRef, {
+            mode: currentMode,
+            teams: teams,
+            matches: matches,
+            semiMatches: [],
+            finalMatch: null
+        });
+    }
+
+    function calculateStandings() {
+        // 1. Reseteamos todas las estadísticas, incluyendo local y visita
+        teams.forEach(t => { 
+            t.pts = 0; t.pj = 0; t.w = 0; t.d = 0; t.l = 0; 
+            t.gf = 0; t.gc = 0; t.dif = 0; 
+            t.gf_home = 0; t.gf_away = 0; 
+        });
+
+        // 2. Contabilizamos los partidos
+        matches.forEach(m => {
+            if (m.played) {
+                let ht = teams.find(t => t.id === m.home);
+                let at = teams.find(t => t.id === m.away);
+
+                ht.pj++; at.pj++;
+                ht.gf += m.homeScore; ht.gc += m.awayScore;
+                at.gf += m.awayScore; at.gc += m.homeScore;
+                
+                // Sumamos goles de local y visita
+                ht.gf_home += m.homeScore;
+                at.gf_away += m.awayScore;
+
+                if (m.homeScore > m.awayScore) { ht.pts += 3; ht.w++; at.l++; }
+                else if (m.homeScore < m.awayScore) { at.pts += 3; at.w++; ht.l++; }
+                else { ht.pts += 1; at.pts += 1; ht.d++; at.d++; }
+            }
+        });
+
+        // 3. Calculamos la diferencia general
+        teams.forEach(t => t.dif = t.gf - t.gc);
+
+        // 4. NUEVO SISTEMA DE ORDENAMIENTO (Mata a Mata)
+        teams.sort((a, b) => {
+            if (b.pts !== a.pts) return b.pts - a.pts;                               // 0. Puntos
+            if (b.dif !== a.dif) return b.dif - a.dif;                               // 1. Diferencia de gol
+            if (b.gf !== a.gf) return b.gf - a.gf;                                   // 2. Goles a Favor
+            if (b.gf_away !== a.gf_away) return b.gf_away - a.gf_away;               // 3. Goles de visita
+            if (b.w !== a.w) return b.w - a.w;                                       // 4. Victorias
+            return b.gf_home - a.gf_home;                                            // 5. Goles de local
+        });
+
+        renderStandings();
+        checkGroupPhaseFinished();
+    }
+
+    function renderStandings() {
+        const tbody = document.getElementById('standings-body');
+        tbody.innerHTML = '';
+        teams.forEach((t, index) => {
+            let rowClass = index < 4 ? 'top-four' : 'eliminated';
+            tbody.innerHTML += `
+                <tr class="${rowClass}">
+                    <td>${index + 1}</td>
+                    <td class="team-name-col">
+                        <strong>${t.name}</strong>
+                        <span class="player-name">${t.player}</span>
+                    </td>
+                    <td><strong>${t.pts}</strong></td>
+                    <td>${t.pj}</td>
+                    <td>${t.w}</td>
+                    <td>${t.d}</td>
+                    <td>${t.l}</td>
+                    <td>${t.gf}</td>
+                    <td>${t.gc}</td>
+                    <td><strong>${t.dif > 0 ? '+'+t.dif : t.dif}</strong></td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderMatches() {
+        const container = document.getElementById('matches-container');
+        container.innerHTML = '';
+        
+        for(let j=1; j<=5; j++) {
+            let roundMatches = matches.filter(m => m.round === j);
+            if(roundMatches.length === 0) continue;
+
+            let restingTeamId = roundMatches[0].restingTeam;
+            let restingPlayer = teams.find(t => t.id === restingTeamId);
+
+            let groupHtml = `<div class="jornada-group">
+                <div class="jornada-title">
+                    <span>Jornada ${j}</span>
+                    <span style="color:var(--text-muted);">🏕️ Descansa: ${restingPlayer.player}</span>
+                </div>`;
+
+            roundMatches.forEach(m => {
+                const home = teams.find(t => t.id === m.home);
+                const away = teams.find(t => t.id === m.away);
+                const btnText = m.played ? '✔' : 'Guardar';
+                const btnClass = m.played ? 'btn-saved' : '';
+
+                groupHtml += `
+                    <div class="match-card">
+                        <div class="match-teams">
+                            <div class="team-name" style="text-align:right;">
+                                ${home.name} <span>(${home.player})</span>
+                            </div>
+                            <div class="score-inputs">
+                                <input type="number" id="h-${m.id}" value="${m.played ? m.homeScore : ''}" min="0">
+                                <span>-</span>
+                                <input type="number" id="a-${m.id}" value="${m.played ? m.awayScore : ''}" min="0">
+                            </div>
+                            <div class="team-name" style="text-align:left;">
+                                ${away.name} <span>(${away.player})</span>
+                            </div>
+                        </div>
+                        <button class="${btnClass}" onclick="saveMatch(${m.id})">${btnText}</button>
+                    </div>
+                `;
+            });
+
+            groupHtml += `</div>`;
+            container.innerHTML += groupHtml;
+        }
+    }
+
+    window.saveMatch = function(matchId) {
+        const hInput = document.getElementById(`h-${matchId}`).value;
+        const aInput = document.getElementById(`a-${matchId}`).value;
+
+        if (hInput === '' || aInput === '') return;
+
+        let match = matches.find(m => m.id === matchId);
+        match.homeScore = parseInt(hInput);
+        match.awayScore = parseInt(aInput);
+        match.played = true;
+
+        // Actualizar en Firebase
+        update(dbRef, { matches: matches });
+    }
+
+    function checkGroupPhaseFinished() {
+        if (!matches || matches.length === 0) return;
+        const allPlayed = matches.every(m => m.played);
+        if (allPlayed && (!semiMatches || semiMatches.length === 0)) {
+            setupSemis();
+        }
+    }
+
+    function setupSemis() {
+        semiMatches = [
+            { id: 'semi1', home: teams[0], away: teams[3], homeScore: null, awayScore: null, played: false, winner: null },
+            { id: 'semi2', home: teams[1], away: teams[2], homeScore: null, awayScore: null, played: false, winner: null }
+        ];
+        
+        update(dbRef, { semiMatches: semiMatches });
+    }
+
+    function renderSemis() {
+        const container = document.getElementById('semis-container');
+        container.innerHTML = '';
+
+        semiMatches.forEach((m, index) => {
+            const btnText = m.played ? 'Actualizar' : 'Guardar';
+            const btnClass = m.played ? 'btn-saved' : '';
+
+            container.innerHTML += `
+                <div class="ko-match">
+                    <h4>Semifinal ${index + 1}</h4>
+                    <p style="font-size: 0.8em; margin-top:-10px; color: var(--text-muted);">
+                        ${index === 0 ? '1ro vs 4to' : '2do vs 3ro'}
+                    </p>
+                    <div class="match-teams">
+                        <div class="team-name" style="text-align:right;">
+                            ${m.home.name} <span>(${m.home.player})</span>
+                        </div>
+                        <div class="score-inputs">
+                            <input type="number" id="h-${m.id}" value="${m.played ? m.homeScore : ''}" min="0">
+                            <span>-</span>
+                            <input type="number" id="a-${m.id}" value="${m.played ? m.awayScore : ''}" min="0">
+                        </div>
+                        <div class="team-name" style="text-align:left;">
+                            ${m.away.name} <span>(${m.away.player})</span>
+                        </div>
+                    </div>
+                    <button class="${btnClass}" style="margin-top:10px;" onclick="saveKoMatch('${m.id}', 'semi')">${btnText}</button>
+                </div>
+            `;
+        });
+        
+        checkSemisFinished();
+    }
+
+    window.saveKoMatch = function(matchId, stage) {
+        const hInput = document.getElementById(`h-${matchId}`).value;
+        const aInput = document.getElementById(`a-${matchId}`).value;
+
+        if (hInput === '' || aInput === '') return;
+
+        let hs = parseInt(hInput);
+        let as = parseInt(aInput);
+
+        if (hs === as) {
+            alert("En la fase eliminatoria no puede haber empates. Suma los goles de los penales al resultado final o agrega 1 gol al ganador.");
+            return;
+        }
+
+        if (stage === 'semi') {
+            let match = semiMatches.find(m => m.id === matchId);
+            match.homeScore = hs;
+            match.awayScore = as;
+            match.played = true;
+            match.winner = hs > as ? match.home : match.away;
+            
+            update(dbRef, { semiMatches: semiMatches });
+            
+        } else if (stage === 'final') {
+            finalMatch.homeScore = hs;
+            finalMatch.awayScore = as;
+            finalMatch.played = true;
+            finalMatch.winner = hs > as ? finalMatch.home : finalMatch.away;
+            
+            update(dbRef, { finalMatch: finalMatch });
+        }
+    }
+
+    function checkSemisFinished() {
+        const allPlayed = semiMatches.every(m => m.played);
+        if (allPlayed && !finalMatch) {
+            finalMatch = { 
+                id: 'final1', 
+                home: semiMatches[0].winner, 
+                away: semiMatches[1].winner, 
+                homeScore: null, 
+                awayScore: null, 
+                played: false 
+            };
+            update(dbRef, { finalMatch: finalMatch });
+        }
+    }
+
+    function renderFinal() {
+        document.getElementById('final-title').style.display = 'block';
+        document.getElementById('final-container').style.display = 'flex';
+
+        const container = document.getElementById('final-container');
+        const btnText = finalMatch.played ? 'Actualizar' : 'Definir Campeón';
+        
+        container.innerHTML = `
+            <div class="ko-match" style="border-color: gold; box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);">
+                <div class="match-teams">
+                    <div class="team-name" style="text-align:right;">
+                        ${finalMatch.home.name} <span>(${finalMatch.home.player})</span>
+                    </div>
+                    <div class="score-inputs">
+                        <input type="number" id="h-final1" value="${finalMatch.played ? finalMatch.homeScore : ''}" min="0">
+                        <span>-</span>
+                        <input type="number" id="a-final1" value="${finalMatch.played ? finalMatch.awayScore : ''}" min="0">
+                    </div>
+                    <div class="team-name" style="text-align:left;">
+                        ${finalMatch.away.name} <span>(${finalMatch.away.player})</span>
+                    </div>
+                </div>
+                <button style="margin-top:15px; background-color: gold; color: #000;" onclick="saveKoMatch('final1', 'final')">${btnText}</button>
+            </div>
+        `;
+
+        if (finalMatch.played && finalMatch.winner) {
+            const champBox = document.getElementById('champion-box');
+            champBox.innerHTML = `👑 ¡${finalMatch.winner.player.toUpperCase()} (${finalMatch.winner.name}) ES EL CAMPEÓN! 👑`;
+            champBox.style.display = 'block';
+        }
+    }
+
+    window.resetTournament = function() {
+        if(confirm("¿Estás seguro de que quieres reiniciar? Esto borrará todos los resultados y el sorteo actual para todos los jugadores.")) {
+            remove(dbRef).then(() => {
+                location.reload();
+            });
+        }
+    }
+</script>
+
+</body>
+</html>

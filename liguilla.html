@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo Triangular eFootball</title>
+    <style>
+        :root {
+            --primary-color: #0f172a; 
+            --secondary-color: #3b82f6; 
+            --accent-color: #fbbf24; 
+            --text-color: #f8fafc;
+            --bg-color: #020617;
+            --card-bg: #1e293b;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 5px;
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        /* Tabla de Posiciones */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #0f172a55;
+        }
+
+        .champion-row {
+            background-color: rgba(251, 191, 36, 0.1) !important;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        /* Resultados Liguilla */
+        .match-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .match-list li {
+            display: flex;
+            justify-content: space-between;
+            background-color: var(--primary-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .score {
+            font-weight: bold;
+            color: var(--accent-color);
+            background-color: rgba(0,0,0,0.3);
+            padding: 2px 10px;
+            border-radius: 4px;
+        }
+
+        /* La Gran Final */
+        .final-match {
+            text-align: center;
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid var(--accent-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .final-teams {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .final-score {
+            font-size: 56px;
+            color: var(--accent-color);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.6);
+            margin: 10px 0;
+        }
+
+        .champion-name {
+            font-size: 24px;
+            color: #fff;
+            margin-top: 15px;
+            background: rgba(251, 191, 36, 0.2);
+            display: inline-block;
+            padding: 10px 30px;
+            border-radius: 50px;
+            border: 1px solid var(--accent-color);
+        }
+
+        /* Grid de Jugadores */
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .player-card {
+            background-color: var(--primary-color);
+            padding: 20px;
+            border-radius: 8px;
+            border-top: 4px solid var(--secondary-color);
+        }
+
+        .player-card h3 {
+            margin: 0 0 15px 0;
+            color: var(--text-color);
+            text-align: center;
+            font-size: 1.5em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            border-bottom: 1px dashed #334155;
+            padding-bottom: 4px;
+        }
+
+        .stat-val {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .player-verdict {
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #cbd5e1;
+            font-style: italic;
+            text-align: center;
+        }
+
+        /* Análisis de Partidos */
+        .analysis-item {
+            background-color: var(--primary-color);
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #475569;
+        }
+
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .analysis-match {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: var(--secondary-color);
+        }
+
+        .analysis-text {
+            font-size: 0.9em;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .rules {
+            font-size: 0.9em;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        /* Utilidades */
+        .text-success { color: var(--success-color) !important; }
+        .text-danger { color: var(--danger-color) !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Triangular eFootball</h1>
+    <p style="text-align: center; color: #94a3b8;">Sergio | Cristopher | Geremi</p>
+
+    <!-- La Gran Final -->
+    <div class="card final-match">
+        <div style="color: var(--accent-color); letter-spacing: 3px; font-size: 14px; margin-bottom: 10px;">🏆 LA GRAN FINAL 🏆</div>
+        <div class="final-teams">Sergio vs Cristopher</div>
+        <div class="final-score">4 - 1</div>
+        <div class="champion-name">🥇 Campeón Indiscutible: <strong>Sergio</strong> 🥇</div>
+        <p style="color: #94a3b8; font-style: italic; margin-top: 15px;">Una final donde la táctica y la contundencia ofensiva marcaron la diferencia.</p>
+    </div>
+
+    <!-- Tabla de Posiciones -->
+    <div class="card">
+        <h2>📊 Tabla de Posiciones Final</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pos</th>
+                    <th>Jugador</th>
+                    <th>PJ</th>
+                    <th>PG</th>
+                    <th>PE</th>
+                    <th>PP</th>
+                    <th>GF</th>
+                    <th>GC</th>
+                    <th>DG</th>
+                    <th>Pts</th>
+                </tr>
+            </thead>
+            <tbody id="standings-body">
+                <!-- La tabla se genera con JS -->
+            </tbody>
+        </table>
+        
+        <div class="rules">
+            <br>
+            <strong>Criterios de desempate:</strong> 1. Duelo Directo | 2. Goles Marcados | 3. Goles Recibidos | 4. Rendimiento en Casa. <br>
+            <em>* Los 2 primeros clasificaron a la Final Única.</em>
+        </div>
+    </div>
+
+    <!-- Estadísticas Individuales -->
+    <div class="card">
+        <h2>🎮 Rendimiento Individual (Liguilla)</h2>
+        <div class="players-grid" id="players-stats-container">
+            <!-- Las tarjetas se generan con JS -->
+        </div>
+    </div>
+
+    <!-- Análisis de Partidos -->
+    <div class="card">
+        <h2>🎙️ El Análisis del VAR (Todos los Partidos)</h2>
+        <div id="match-analysis-container">
+            <!-- Los análisis se inyectan con JS -->
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 1. Definir los partidos de la liguilla y sus análisis
+    const matches = [
+        { home: "Sergio", away: "Cristopher", homeScore: 2, awayScore: 2, 
+          analysis: "Un arranque de torneo electrizante. Ambos mostraron sus cartas desde el principio en un duelo muy táctico donde nadie quiso ceder." },
+        { home: "Cristopher", away: "Geremi", homeScore: 5, awayScore: 2,
+          analysis: "Cristopher desató todo su potencial ofensivo, aprovechando muy bien los espacios y castigando los errores en la salida de Geremi." },
+        { home: "Geremi", away: "Sergio", homeScore: 0, awayScore: 2,
+          analysis: "Sergio impuso su ritmo. Mantuvo la portería a cero con una defensa sólida y fue letal en las oportunidades que tuvo." },
+        { home: "Cristopher", away: "Sergio", homeScore: 1, awayScore: 4,
+          analysis: "Un golpe sobre la mesa. Sergio dominó de principio a fin, encontrando huecos en la defensa rival y asegurando su pase a la final." },
+        { home: "Geremi", away: "Cristopher", homeScore: 4, awayScore: 0,
+          analysis: "¡La gran sorpresa de la liguilla! Geremi se despidió con honor, destrozando a un Cristopher que quizás ya tenía la mente en la final." },
+        { home: "Sergio", away: "Geremi", homeScore: 5, awayScore: 1,
+          analysis: "Sergio cerró la fase regular de forma intratable, asegurando el primer puesto con autoridad y un volumen de juego ofensivo altísimo." }
+    ];
+
+    // Datos extra para la final (solo para mostrar en el análisis)
+    const finalMatch = { 
+        home: "Sergio", away: "Cristopher", homeScore: 4, awayScore: 1,
+        analysis: "El partido decisivo. Sergio demostró jerarquía pura, controlando el mediocampo y siendo letal de cara al arco para llevarse la corona del torneo sin dejar dudas."
+    };
+
+    // 2. Renderizar Análisis de Partidos
+    const analysisContainer = document.getElementById('match-analysis-container');
+    
+    // Función para crear bloques de análisis
+    function createAnalysisBlock(match, isFinal = false) {
+        const div = document.createElement('div');
+        div.className = 'analysis-item';
+        if(isFinal) div.style.borderLeftColor = 'var(--accent-color)';
+        
+        div.innerHTML = `
+            <div class="analysis-header">
+                <span class="analysis-match">${isFinal ? '👑 FINAL: ' : ''}${match.home} vs ${match.away}</span>
+                <span class="score">${match.homeScore} - ${match.awayScore}</span>
+            </div>
+            <div class="analysis-text">"${match.analysis}"</div>
+        `;
+        return div;
+    }
+
+    // Agregar la liguilla
+    matches.forEach(match => analysisContainer.appendChild(createAnalysisBlock(match)));
+    // Agregar la final al final de la lista
+    analysisContainer.appendChild(createAnalysisBlock(finalMatch, true));
+
+
+    // 3. Inicializar y calcular estadísticas de jugadores (solo liguilla para la tabla)
+    const players = {
+        "Sergio": { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+        "Cristopher": { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 },
+        "Geremi": { pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, pts: 0 }
+    };
+
+    matches.forEach(m => {
+        players[m.home].pj++;
+        players[m.away].pj++;
+        players[m.home].gf += m.homeScore;
+        players[m.home].gc += m.awayScore;
+        players[m.away].gf += m.awayScore;
+        players[m.away].gc += m.homeScore;
+
+        if (m.homeScore > m.awayScore) {
+            players[m.home].pg++;
+            players[m.home].pts += 3;
+            players[m.away].pp++;
+        } else if (m.homeScore < m.awayScore) {
+            players[m.away].pg++;
+            players[m.away].pts += 3;
+            players[m.home].pp++;
+        } else {
+            players[m.home].pe++;
+            players[m.home].pts += 1;
+            players[m.away].pe++;
+            players[m.away].pts += 1;
+        }
+    });
+
+    let standings = Object.keys(players).map(name => {
+        return { name: name, ...players[name], dg: players[name].gf - players[name].gc };
+    });
+
+    // Ordenar tabla
+    standings.sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts; 
+        if (b.gf !== a.gf) return b.gf - a.gf;     
+        return a.gc - b.gc;                        
+    });
+
+    // 4. Renderizar Tabla
+    const tbody = document.getElementById('standings-body');
+    standings.forEach((player, index) => {
+        const tr = document.createElement('tr');
+        if (index < 2) tr.classList.add('champion-row');
+        
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td style="font-weight: bold; color: ${index === 0 ? 'var(--accent-color)' : 'inherit'}">
+                ${player.name} ${index === 0 ? '⭐' : ''}
+            </td>
+            <td>${player.pj}</td>
+            <td>${player.pg}</td>
+            <td>${player.pe}</td>
+            <td>${player.pp}</td>
+            <td>${player.gf}</td>
+            <td>${player.gc}</td>
+            <td class="${player.dg > 0 ? 'text-success' : (player.dg < 0 ? 'text-danger' : '')}">${player.dg > 0 ? '+'+player.dg : player.dg}</td>
+            <td style="font-weight: bold; font-size: 1.1em; color: var(--secondary-color);">${player.pts}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 5. Renderizar Tarjetas de Estadísticas Individuales
+    const statsContainer = document.getElementById('players-stats-container');
+    
+    // Textos personalizados según rendimiento
+    const getVerdict = (name, index) => {
+        if(name === "Sergio") return "MVP indiscutido. Defensa impenetrable y ataque arrollador.";
+        if(name === "Cristopher") return "Gran fase ofensiva, pero la defensa sufrió en partidos clave.";
+        if(name === "Geremi") return "Dejó destellos de calidad, como esa gran victoria de 4-0.";
+        return "Buen torneo.";
+    };
+
+    standings.forEach((player, index) => {
+        const winRate = ((player.pg / player.pj) * 100).toFixed(0);
+        const avgGoalsFor = (player.gf / player.pj).toFixed(1);
+        const avgGoalsAgainst = (player.gc / player.pj).toFixed(1);
+        
+        // Colores dinámicos para stats
+        const wrColor = winRate >= 50 ? 'text-success' : 'text-danger';
+        const gdColor = player.dg > 0 ? 'text-success' : (player.dg < 0 ? 'text-danger' : '');
+
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        // Estilo especial para el campeón
+        if(name === "Sergio") card.style.borderTopColor = 'var(--accent-color)';
+
+        card.innerHTML = `
+            <h3 style="color: ${index === 0 ? 'var(--accent-color)' : 'var(--text-color)'}">${player.name}</h3>
+            
+            <div class="stat-row">
+                <span>Win Rate</span>
+                <span class="stat-val ${wrColor}">${winRate}%</span>
+            </div>
+            <div class="stat-row">
+                <span>Goles por partido</span>
+                <span class="stat-val">${avgGoalsFor}</span>
+            </div>
+            <div class="stat-row">
+                <span>Goles recibidos/partido</span>
+                <span class="stat-val">${avgGoalsAgainst}</span>
+            </div>
+            <div class="stat-row">
+                <span>Diferencia de Goles</span>
+                <span class="stat-val ${gdColor}">${player.dg > 0 ? '+'+player.dg : player.dg}</span>
+            </div>
+            
+            <div class="player-verdict">
+                ${getVerdict(player.name, index)}
+            </div>
+        `;
+        statsContainer.appendChild(card);
+    });
+
+</script>
+
+</body>
+</html>

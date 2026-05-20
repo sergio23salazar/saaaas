@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquina de Ahorros</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --light: #ecf0f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+        }
+        /* Tarjetas de Resumen */
+        .summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            flex: 1;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .card h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #7f8c8d; }
+        .card p { margin: 0; font-size: 1.8rem; font-weight: bold; }
+        .text-success { color: var(--success); }
+        .text-danger { color: var(--danger); }
+        .text-primary { color: var(--primary); }
+
+        /* Formularios */
+        .form-section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        label { margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
+        input[type="number"], input[type="text"], input[type="datetime-local"], input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #1a252f; }
+
+        /* Tabla de Historial */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: var(--primary); color: white; }
+        .file-link {
+            display: inline-block;
+            padding: 5px 10px;
+            background: var(--light);
+            text-decoration: none;
+            color: var(--primary);
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        .file-link:hover { background: #d5dbdb; }
+        
+        @media (max-width: 600px) {
+            .summary { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Mi Máquina de Ahorros 💰</h1>
+
+    <div class="summary">
+        <div class="card">
+            <h3>Presupuesto / Sueldo</h3>
+            <p class="text-success" id="display-income">$0</p>
+        </div>
+        <div class="card">
+            <h3>Total Gastos</h3>
+            <p class="text-danger" id="display-expenses">$0</p>
+        </div>
+        <div class="card">
+            <h3>Saldo Disponible</h3>
+            <p class="text-primary" id="display-balance">$0</p>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>1. Configurar Sueldo Mensual</h3>
+        <div class="form-group">
+            <input type="number" id="income-input" placeholder="Ej: 500000" min="0">
+        </div>
+        <button onclick="saveIncome()">Actualizar Sueldo</button>
+    </div>
+
+    <div class="form-section">
+        <h3>2. Registrar Nuevo Gasto</h3>
+        <form id="expense-form">
+            <div class="form-group">
+                <label for="expense-desc">Descripción (Ej: Supermercado, Luz, etc.)</label>
+                <input type="text" id="expense-desc" required>
+            </div>
+            <div class="form-group">
+                <label for="expense-amount">Monto</label>
+                <input type="number" id="expense-amount" required min="1">
+            </div>
+            <div class="form-group">
+                <label for="expense-date">Fecha y Hora</label>
+                <input type="datetime-local" id="expense-date" required>
+            </div>
+            <div class="form-group">
+                <label for="expense-file">Boleta / Recibo (Imagen o PDF)</label>
+                <input type="file" id="expense-file" accept="image/*,application/pdf">
+            </div>
+            <button type="submit">Guardar Gasto</button>
+        </form>
+    </div>
+
+    <h3>Historial de Movimientos</h3>
+    <table id="expense-table">
+        <thead>
+            <tr>
+                <th>Fecha y Hora</th>
+                <th>Descripción</th>
+                <th>Monto</th>
+                <th>Boleta</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody id="expense-list">
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // Configurar la fecha actual por defecto en el formulario
+    window.addEventListener('load', () => {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('expense-date').value = now.toISOString().slice(0,16);
+        updateUI();
+    });
+
+    // Función para guardar el sueldo
+    function saveIncome() {
+        const income = parseFloat(document.getElementById('income-input').value);
+        if (income >= 0) {
+            localStorage.setItem('monthlyIncome', income);
+            updateUI();
+            document.getElementById('income-input').value = '';
+        }
+    }
+
+    // Manejar el envío del formulario de gastos
+    document.getElementById('expense-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const desc = document.getElementById('expense-desc').value;
+        const amount = parseFloat(document.getElementById('expense-amount').value);
+        const date = document.getElementById('expense-date').value;
+        const fileInput = document.getElementById('expense-file');
+        
+        let fileData = null;
+        let fileName = null;
+
+        // Si hay un archivo, lo convertimos a Base64 para guardarlo en LocalStorage
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            fileName = file.name;
+            fileData = await getBase64(file);
+        }
+
+        const newExpense = {
+            id: Date.now(), // ID único basado en la fecha actual
+            desc,
+            amount,
+            date,
+            fileData,
+            fileName
+        };
+
+        // Obtener gastos anteriores, añadir el nuevo y guardar
+        const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        expenses.push(newExpense);
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+
+        this.reset(); // Limpiar formulario
+        
+        // Restaurar fecha actual tras limpiar
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('expense-date').value = now.toISOString().slice(0,16);
+
+        updateUI();
+    });
+
+    // Función para eliminar un gasto
+    function deleteExpense(id) {
+        let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        expenses = expenses.filter(expense => expense.id !== id);
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        updateUI();
+    }
+
+    // Convertir archivo a Base64 (para guardarlo localmente)
+    function getBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    // Actualizar la interfaz (Cálculos y Tabla)
+    function updateUI() {
+        const income = parseFloat(localStorage.getItem('monthlyIncome')) || 0;
+        const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        
+        // Calcular total de gastos
+        const totalExpenses = expenses.reduce((sum, current) => sum + current.amount, 0);
+        const balance = income - totalExpenses;
+
+        // Formatear a moneda (Peso Chileno en este caso, se puede cambiar)
+        const formatter = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' });
+
+        document.getElementById('display-income').innerText = formatter.format(income);
+        document.getElementById('display-expenses').innerText = formatter.format(totalExpenses);
+        document.getElementById('display-balance').innerText = formatter.format(balance);
+
+        // Cambiar color del saldo si es negativo
+        const balanceEl = document.getElementById('display-balance');
+        if (balance < 0) {
+            balanceEl.className = 'text-danger';
+        } else {
+            balanceEl.className = 'text-primary';
+        }
+
+        // Renderizar la tabla
+        const tbody = document.getElementById('expense-list');
+        tbody.innerHTML = ''; // Limpiar contenido previo
+
+        // Ordenar gastos del más reciente al más antiguo
+        expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        expenses.forEach(expense => {
+            const tr = document.createElement('tr');
+            
+            // Formatear la fecha para que se vea legible
+            const dateObj = new Date(expense.date);
+            const formattedDate = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            let fileHtml = 'Sin boleta';
+            if (expense.fileData) {
+                // Crea un enlace descargable con el archivo guardado en Base64
+                fileHtml = `<a href="${expense.fileData}" download="boleta_${expense.fileName}" class="file-link" title="Descargar/Ver">📄 Ver Boleta</a>`;
+            }
+
+            tr.innerHTML = `
+                <td>${formattedDate}</td>
+                <td>${expense.desc}</td>
+                <td class="text-danger">-${formatter.format(expense.amount)}</td>
+                <td>${fileHtml}</td>
+                <td><button onclick="deleteExpense(${expense.id})" style="background:#e74c3c; padding: 5px 10px; font-size: 0.8rem;">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+
+</body>
+</html>
