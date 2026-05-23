@@ -240,7 +240,7 @@
             padding: 20px;
             border-radius: 12px;
             border: 2px dashed #f39c12;
-            font-size: 2em;
+            font-size: 1.8em;
             margin-top: 30px;
             display: none;
             animation: pop 0.5s ease-out forwards;
@@ -248,9 +248,24 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
+        .prize-image {
+            margin-top: 15px;
+            max-width: 200px;
+            border-radius: 10px;
+            border: 4px solid gold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
         @keyframes pop {
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
 
         #loading {
@@ -340,13 +355,13 @@
             <div id="champion-box" class="champion-box"></div>
         </div>
         
-        <button class="btn-danger" onclick="resetTournament()">⚠ Reiniciar Torneo (Borrar Base de Datos) ⚠</button>
+        <button class="btn-danger" onclick="resetTournament()">⚠ Reiniciar Torneo (Generar Nueva Edición) ⚠</button>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBN9jRNgeJ5mDukzF5Jiujw7zadG4-UpZw",
@@ -364,9 +379,10 @@
 
     const players = ["Fernando", "Sergio", "Geremi", "Cristian", "Cristopher"];
     
+    // Se añadieron 3 selecciones más para que al bloquear 5 queden suficientes para elegir (total 12)
     const teamPools = {
         clubs: ["Real Madrid", "FC Barcelona", "Manchester City", "Bayern Munich", "Arsenal", "Liverpool", "PSG", "Inter Milan", "Juventus", "AC Milan", "Atlético Madrid", "Chelsea", "Borussia Dortmund", "Manchester United", "Spurs"],
-        national: ["Argentina", "Francia", "Inglaterra", "España", "Portugal", "Alemania", "Italia", "Países Bajos", "Bélgica"] // Sin Brasil ni Uruguay
+        national: ["Argentina", "Francia", "Inglaterra", "España", "Portugal", "Alemania", "Italia", "Países Bajos", "Bélgica", "Chile", "Colombia", "Croacia"]
     };
     
     let teams = [];
@@ -375,8 +391,8 @@
     let finalMatch = null;
     let currentMode = '';
     
-    // Objeto para recordar qué equipo tuvo cada jugador en el torneo actual/anterior
-    let previousTeams = {}; 
+    // Objeto para recordar qué equipos se usaron en el torneo anterior para NO repetirlos
+    let previousLastUsed = { clubs: [], national: [] }; 
 
     // ESCUCHAR CAMBIOS EN LA BASE DE DATOS
     onValue(dbRef, (snapshot) => {
@@ -384,44 +400,47 @@
         document.getElementById('loading').style.display = 'none';
 
         if (data) {
-            // Guardar registro de equipos actuales para evitar repetición en el siguiente torneo
+            // Guardamos el historial de los últimos equipos usados
+            if (data.lastUsed) {
+                previousLastUsed = data.lastUsed;
+            }
+
             if (data.teams) {
-                previousTeams = {};
-                data.teams.forEach(t => {
-                    previousTeams[t.player] = t.name;
-                });
-            }
+                // Hay torneo activo
+                teams = data.teams;
+                matches = data.matches || [];
+                semiMatches = data.semiMatches || [];
+                finalMatch = data.finalMatch || null;
+                currentMode = data.mode || 'national';
 
-            teams = data.teams || [];
-            matches = data.matches || [];
-            semiMatches = data.semiMatches || [];
-            finalMatch = data.finalMatch || null;
-            currentMode = data.mode || 'national';
+                document.getElementById('setup-section').style.display = 'none';
+                document.getElementById('main-tournament').style.display = 'block';
+                document.getElementById('mode-display').innerText = currentMode === 'clubs' ? 'Clubes' : 'Selecciones';
 
-            document.getElementById('setup-section').style.display = 'none';
-            document.getElementById('main-tournament').style.display = 'block';
-            document.getElementById('mode-display').innerText = currentMode === 'clubs' ? 'Clubes' : 'Selecciones';
+                calculateStandings();
+                renderMatches();
+                
+                if (semiMatches.length > 0) {
+                    document.getElementById('knockout-section').style.display = 'block';
+                    renderSemis();
+                } else {
+                    document.getElementById('knockout-section').style.display = 'none';
+                }
 
-            calculateStandings();
-            renderMatches();
-            
-            if (semiMatches.length > 0) {
-                document.getElementById('knockout-section').style.display = 'block';
-                renderSemis();
+                if (finalMatch) {
+                    renderFinal();
+                } else {
+                    document.getElementById('final-title').style.display = 'none';
+                    document.getElementById('final-container').style.display = 'none';
+                    document.getElementById('champion-box').style.display = 'none';
+                }
             } else {
-                document.getElementById('knockout-section').style.display = 'none';
-            }
-
-            if (finalMatch) {
-                renderFinal();
-            } else {
-                document.getElementById('final-title').style.display = 'none';
-                document.getElementById('final-container').style.display = 'none';
-                document.getElementById('champion-box').style.display = 'none';
+                // No hay torneo activo, pero sí historial
+                document.getElementById('setup-section').style.display = 'block';
+                document.getElementById('main-tournament').style.display = 'none';
             }
         } else {
-            // No hay torneo, mostrar configuración
-            previousTeams = {};
+            // No hay nada en la BD
             document.getElementById('setup-section').style.display = 'block';
             document.getElementById('main-tournament').style.display = 'none';
         }
@@ -434,39 +453,26 @@
         semiMatches = [];
         finalMatch = null;
 
-        let validAssignment = false;
-        let shuffledPlayers = [...players].sort(() => 0.5 - Math.random());
-        let assignedTeams = [];
+        // FILTRO DE BÚSQUEDA: Quitamos del bombo los equipos que se usaron en el torneo anterior de este mismo tipo
+        let bannedTeams = previousLastUsed[currentMode] || [];
+        let availablePool = teamPools[currentMode].filter(team => !bannedTeams.includes(team));
+        
+        // Por si acaso, si no hubiera suficientes equipos (no debería pasar), usamos el pool completo
+        if(availablePool.length < 5) {
+            availablePool = teamPools[currentMode];
+        }
 
-        // Bucle para garantizar que ningún jugador repita el equipo del torneo anterior
-        while (!validAssignment) {
-            let shuffledTeams = teamPools[currentMode].sort(() => 0.5 - Math.random());
-            assignedTeams = [];
-            let isValid = true;
-            
-            for(let i=0; i<5; i++) {
-                let player = shuffledPlayers[i];
-                let team = shuffledTeams[i];
-                
-                // Verificamos si el jugador tuvo este mismo equipo justo en el torneo anterior
-                if (previousTeams[player] === team) {
-                    isValid = false;
-                    break;
-                }
-                
-                assignedTeams.push({
-                    id: i, 
-                    player: player,
-                    name: team,
-                    pts: 0, pj: 0, w: 0, d: 0, l: 0, gf: 0, gc: 0, dif: 0,
-                    gf_home: 0, gf_away: 0
-                });
-            }
-            
-            if (isValid) {
-                validAssignment = true;
-                teams = assignedTeams;
-            }
+        let shuffledTeams = availablePool.sort(() => 0.5 - Math.random());
+        let shuffledPlayers = [...players].sort(() => 0.5 - Math.random());
+
+        for(let i=0; i<5; i++) {
+            teams.push({
+                id: i, 
+                player: shuffledPlayers[i],
+                name: shuffledTeams[i],
+                pts: 0, pj: 0, w: 0, d: 0, l: 0, gf: 0, gc: 0, dif: 0,
+                gf_home: 0, gf_away: 0
+            });
         }
 
         let matchId = 0;
@@ -495,13 +501,14 @@
             });
         });
 
-        // Guardar estado inicial en Firebase
+        // Guardar estado inicial en Firebase, MANTENIENDO el lastUsed
         set(dbRef, {
             mode: currentMode,
             teams: teams,
             matches: matches,
             semiMatches: [],
-            finalMatch: null
+            finalMatch: null,
+            lastUsed: previousLastUsed
         });
     }
 
@@ -760,16 +767,38 @@
             </div>
         `;
 
+        // EL PREMIO SECRETO APARECE AQUÍ
         if (finalMatch.played && finalMatch.winner) {
             const champBox = document.getElementById('champion-box');
-            champBox.innerHTML = `👑 ¡El REY DE LOS PIRATAS es<br><span style="color:var(--primary-color);">${finalMatch.winner.player.toUpperCase()}</span><br><span style="font-size:0.5em; color:var(--text-main);">(${finalMatch.winner.name})</span>! 👑`;
+            champBox.innerHTML = `
+                👑 ¡El REY DE LOS PIRATAS es<br>
+                <span style="color:var(--primary-color);">${finalMatch.winner.player.toUpperCase()}</span><br>
+                <span style="font-size:0.5em; color:var(--text-main);">(${finalMatch.winner.name})</span>! 👑
+                
+                <div style="margin-top: 25px; padding-top: 20px; border-top: 2px dashed #f39c12;">
+                    <p style="font-size: 0.6em; color: #7f8c8d; text-transform: uppercase; margin-bottom: 5px;">🏆 Gran Premio del Torneo 🏆</p>
+                    <p style="font-size: 0.5em; color: var(--primary-color); margin-top: 0;">Disfrútalo campeón...</p>
+                    <img src="https://http2.mlstatic.com/D_NQ_NP_2X_699914-MLC48627123053_122021-F.webp" alt="Premio Especial" class="prize-image">
+                </div>
+            `;
             champBox.style.display = 'block';
         }
     }
 
+    // AHORA EL RESET GUARDA EL HISTORIAL Y BORRA SOLO EL TORNEO
     window.resetTournament = function() {
-        if(confirm("🏴‍☠️ ¿Estás seguro de que quieres reiniciar la aventura? Esto borrará todos los resultados y sorteará nuevos equipos.")) {
-            remove(dbRef).then(() => {
+        if(confirm("🏴‍☠️ ¿Estás seguro de que quieres reiniciar la aventura? Los 5 equipos actuales quedarán bloqueados para el siguiente torneo.")) {
+            
+            let updatedLastUsed = previousLastUsed;
+            // Guardamos los equipos del torneo actual en la memoria de la categoría correspondiente
+            if (teams && teams.length > 0) {
+                updatedLastUsed[currentMode] = teams.map(t => t.name);
+            }
+            
+            // Reemplazamos la base de datos dejando SOLAMENTE el historial de bloqueos
+            set(dbRef, {
+                lastUsed: updatedLastUsed
+            }).then(() => {
                 location.reload();
             });
         }
