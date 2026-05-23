@@ -379,10 +379,10 @@
 
     const players = ["Fernando", "Sergio", "Geremi", "Cristian", "Cristopher"];
     
-    // Se añadieron 3 selecciones más para que al bloquear 5 queden suficientes para elegir (total 12)
+    // Dejamos las selecciones tal y como pediste: "Lo mejor de lo mejor" sin rellenos, sin Uruguay ni Brasil.
     const teamPools = {
         clubs: ["Real Madrid", "FC Barcelona", "Manchester City", "Bayern Munich", "Arsenal", "Liverpool", "PSG", "Inter Milan", "Juventus", "AC Milan", "Atlético Madrid", "Chelsea", "Borussia Dortmund", "Manchester United", "Spurs"],
-        national: ["Argentina", "Francia", "Inglaterra", "España", "Portugal", "Alemania", "Italia", "Países Bajos", "Bélgica", "Chile", "Colombia", "Croacia"]
+        national: ["Argentina", "Francia", "Inglaterra", "España", "Portugal", "Alemania", "Italia", "Países Bajos", "Bélgica"]
     };
     
     let teams = [];
@@ -391,8 +391,8 @@
     let finalMatch = null;
     let currentMode = '';
     
-    // Objeto para recordar qué equipos se usaron en el torneo anterior para NO repetirlos
-    let previousLastUsed = { clubs: [], national: [] }; 
+    // Objeto para recordar qué equipos se usaron (Solo usaremos la parte de clubs)
+    let previousLastUsed = { clubs: [] }; 
 
     // ESCUCHAR CAMBIOS EN LA BASE DE DATOS
     onValue(dbRef, (snapshot) => {
@@ -400,7 +400,7 @@
         document.getElementById('loading').style.display = 'none';
 
         if (data) {
-            // Guardamos el historial de los últimos equipos usados
+            // Guardamos el historial de los últimos equipos usados (solo clubes)
             if (data.lastUsed) {
                 previousLastUsed = data.lastUsed;
             }
@@ -453,11 +453,11 @@
         semiMatches = [];
         finalMatch = null;
 
-        // FILTRO DE BÚSQUEDA: Quitamos del bombo los equipos que se usaron en el torneo anterior de este mismo tipo
-        let bannedTeams = previousLastUsed[currentMode] || [];
+        // FILTRO DE BÚSQUEDA: Solo aplicamos el baneo si estamos en modo "clubs"
+        let bannedTeams = currentMode === 'clubs' ? (previousLastUsed['clubs'] || []) : [];
         let availablePool = teamPools[currentMode].filter(team => !bannedTeams.includes(team));
         
-        // Por si acaso, si no hubiera suficientes equipos (no debería pasar), usamos el pool completo
+        // Prevención de errores (por si faltan equipos disponibles)
         if(availablePool.length < 5) {
             availablePool = teamPools[currentMode];
         }
@@ -785,14 +785,14 @@
         }
     }
 
-    // AHORA EL RESET GUARDA EL HISTORIAL Y BORRA SOLO EL TORNEO
+    // EL RESET AHORA BLOQUEA SOLO CLUBES
     window.resetTournament = function() {
-        if(confirm("🏴‍☠️ ¿Estás seguro de que quieres reiniciar la aventura? Los 5 equipos actuales quedarán bloqueados para el siguiente torneo.")) {
+        if(confirm("🏴‍☠️ ¿Estás seguro de que quieres reiniciar la aventura? (Si jugaste con clubes, estos quedarán bloqueados para el siguiente torneo).")) {
             
             let updatedLastUsed = previousLastUsed;
-            // Guardamos los equipos del torneo actual en la memoria de la categoría correspondiente
-            if (teams && teams.length > 0) {
-                updatedLastUsed[currentMode] = teams.map(t => t.name);
+            // Guardamos los equipos del torneo actual en la memoria SOLO si estamos en modo clubes
+            if (teams && teams.length > 0 && currentMode === 'clubs') {
+                updatedLastUsed['clubs'] = teams.map(t => t.name);
             }
             
             // Reemplazamos la base de datos dejando SOLAMENTE el historial de bloqueos
